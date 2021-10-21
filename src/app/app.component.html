@@ -1,0 +1,144 @@
+<!-- Toolbar -->
+
+<div class="toolbar" role="banner">
+  <img width="40" /> <i class="fa fa-bullseye"></i>
+  <span>Terra NFT Escrow Service</span>
+  <div class="spacer"></div>
+  <div>Issues & Feedback?<br />
+    <p><a href="https://discord.gg/H4CJufGA" style="color:white;">Join <i class="fab fa-discord"> </i>
+      </a>
+    </p>
+    <p>
+    <p>anupkumar@live.in</p>
+  </div>
+  <div class="spacer"></div>
+  <span>{{walletAddress}}</span>
+  <div>
+    <div *ngIf="walletConnected ; then walletConnectedBlock else walletDisconnectedBlock"></div>
+    <ng-template #walletConnectedBlock> <button mat-raised-button color="primary"
+        (click)="walletDisconnect()">Disconnect</button>
+
+    </ng-template>
+    <ng-template #walletDisconnectedBlock>
+      <button mat-raised-button color="primary" (click)="walletConnect()">Connect</button>
+    </ng-template>
+
+  </div>
+  <div class="spacer-sm"></div>
+
+</div>
+
+<div class="content" role="main">
+
+
+  <div style="
+    color: orange;
+  ">Note :
+    This is just a tool/place to trade Terra NFTs before or after listing<br />
+    This service should not be misused to avoid protocol/royalties fees, its just a tool for peer 2 peer trade.
+    <br />The Terra NFT Escrow Service is in
+    beta,
+    smart
+    contract not audited, for any issue contact above.
+  </div>
+  <div style="
+    color: green;
+    ">NFT Escrow Maker/Taker Fees : {{ ((marketConfig.maker_fees - 1)*100).toFixed(2) }}%</div>
+  <div *ngIf="alreadyPostedAd" style="
+   color: red;
+ ">Please cancel any posted ad, and then repost another if you want to</div>
+  <div *ngIf="alreadyPostedAd" style="
+ color: red;
+ ">Only one ad per wallet at a time is allowed</div>
+  <mat-divider></mat-divider>
+  <div class="box">
+    <div>
+      <mat-form-field appearance="fill">
+        <mat-label>NFT Collection</mat-label>
+        <mat-select [disabled]="alreadyPostedAd" [(value)]="selectedContract" (selectionChange)="onNftContractChange()">
+          <mat-option *ngFor="let nftCollection of nftContracts" [value]="nftCollection.contract">
+            {{nftCollection.name}}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div *ngIf="selectedContract" class="smart_contract_addr">
+      <b> <a href="https://finder.extraterrestrial.money/columbus-5/address/{{selectedContract}}">{{ selectedContract
+          }}</a> <i class="fa fa-check" aria-hidden="true">Verified</i></b>
+    </div>
+  </div>
+  <div>Connect wallet, choose an NFT Collection to post an ad</div>
+  <mat-divider></mat-divider>
+
+
+  <mat-grid-list *ngIf="!alreadyPostedAd && walletNfts.length != 0" cols=4 rowHeight="4:4">
+    <mat-grid-tile *ngFor="let nft of walletNfts">
+      <mat-card class="nft-card">
+        <mat-card-header>
+          <mat-card-title>{{nft?.name}}</mat-card-title>
+        </mat-card-header>
+        <img mat-card-image style="width:230px" src="{{getImage(nft)}}">
+        <mat-card-actions>
+          <button mat-button color="primary" (click)="openSellDialog(nft)">Post Ad</button>
+        </mat-card-actions>
+      </mat-card>
+    </mat-grid-tile>
+  </mat-grid-list>
+
+  <h4>All Ads</h4>
+  <mat-progress-bar *ngIf="loading" mode="query"></mat-progress-bar>
+  <table mat-table *ngIf="allAds.length != 0" [dataSource]="allAds" class="mat-elevation-z8" style="width: 100%;">
+    <!-- Position Column -->
+    <ng-container matColumnDef="image">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let element"> <img style="
+        max-width: 50px;" src="https://d75aawrtvbfp1.cloudfront.net/{{element.extension.image}}" /> </td>
+    </ng-container>
+
+    <ng-container matColumnDef="seller">
+      <th mat-header-cell *matHeaderCellDef> Seller </th>
+      <td mat-cell *matCellDef="let element"> {{element.seller}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="nft#">
+      <th mat-header-cell *matHeaderCellDef> NFT # </th>
+      <td mat-cell *matCellDef="let element"> {{element.extension.name}} </td>
+    </ng-container>
+
+    <ng-container matColumnDef="price">
+      <th mat-header-cell *matHeaderCellDef> Price </th>
+      <td mat-cell *matCellDef="let element"> {{getPrice(element.price.amount)}} Luna</td>
+    </ng-container>
+
+    <ng-container matColumnDef="price with fee">
+      <th mat-header-cell *matHeaderCellDef> Price With Fee</th>
+      <td mat-cell *matCellDef="let element"> {{getPrice(element.price.amount)*(marketConfig.maker_fees)}} Luna</td>
+    </ng-container>
+
+    <ng-container matColumnDef="created_at">
+      <th mat-header-cell *matHeaderCellDef>Created At</th>
+      <td mat-cell *matCellDef="let element"> {{cleanDate(element.posted_at)}}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="buy">
+      <th mat-header-cell *matHeaderCellDef> Buy/Cancel </th>
+
+      <td mat-cell *matCellDef="let element">
+        <div *ngIf="walletAddress == element.seller ; then ifBlock else elseBlock"></div>
+        <ng-template #ifBlock>
+          <button mat-raised-button color="primary" (click)="cancelNft(element)">Cancel</button>
+        </ng-template>
+        <ng-template #elseBlock>
+          <button mat-raised-button color="primary" (click)="buyNft(element)">Buy</button>
+        </ng-template>
+
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+
+</div>
+<router-outlet></router-outlet>
