@@ -16,6 +16,7 @@ import {
 import { WalletChooseDialog } from './wallet-choose-dialog.component';
 import { SellDialog } from './sell-dialog.component';
 
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -31,16 +32,21 @@ export class AppComponent {
   walletNfts: any[] = [];
   selectedNft: any;
   allAds: any[] = [];
+  recentPurchases: any = [];
   alreadyPostedAd = false;
   displayedColumns: string[] = ["image", "nft#", 'seller', "price", "price with fee", "created_at", "buy"];
+  recentPurchaseColumns: string[] = ["image", "nft#", "price", "time", "txn_link"];
   lcdClient: any;
   loading = false;
   marketConfig = { "maker_fees": 1.01, "taker_fees": 1.01 }
   lastRspUpdate = []
-  @ViewChild(MatTable) table: MatTable<any> | undefined;
+  @ViewChild("all_ads", { static: true }) table: MatTable<any> | undefined;
+  @ViewChild("recent_purchases", { static: true }) table2: MatTable<any> | undefined;
+  marketSmartContractAddr: string
 
   constructor(private lcdService: LcdService, public dialog: MatDialog, private _snackBar: MatSnackBar) {
     this.walletInit()
+    this.marketSmartContractAddr = marketSmartContractAddr
   }
 
   async walletInit() {
@@ -86,22 +92,59 @@ export class AppComponent {
       })
   }
 
+  refreshRecentPurchase() {
+    this.lcdService.getRecentTx(marketSmartContractAddr)
+      .subscribe((txns) => {
+        txns.txs.forEach((tx: any) => {
+          let msgs = tx.tx?.value?.msg
+
+          if (msgs[0]?.value?.execute_msg?.buy) {
+            let item = {
+              "nft": {
+                "contract_addr": tx.logs[0].events[3].attributes[2].value,
+                "token_id": tx.logs[0].events[3].attributes[8].value
+              },
+              "price": msgs[0]?.value?.coins[0],
+              "time": String(new Date(tx.timestamp).getTime() * 1000),
+              "txhash": tx.txhash,
+              "extension": {}
+            }
+            item.price.amount = String(parseInt(item.price.amount) / this.marketConfig.maker_fees)
+
+
+            this.lcdService.getQuery(item.nft.contract_addr, { "nft_info": { "token_id": item.nft.token_id } })
+              .subscribe(
+                (nft_info) => {
+                  item.extension = nft_info.result.extension
+                  this.recentPurchases.push(item)
+                  if (this.table2?.renderRows)
+                    this.table2.renderRows();
+                })
+          }
+        })
+      })
+  }
+
   refreshAds() {
     this.alreadyPostedAd = false
     this.allAds = []
     this.loading = true
+    this.refreshRecentPurchase()
     this.lcdService.getQuery(marketSmartContractAddr, { "ads": {} })
       .subscribe((rsp) => {
         this.lastRspUpdate = JSON.parse(JSON.stringify(rsp.result.ads))
         rsp.result.ads.forEach((element: any) => {
           if (element.status == "active") {
-            this.lcdService.getQuery(element.nft.contract_addr, { "nft_info": { "token_id": element.nft.token_id } }).subscribe(
-              (nft_info) => {
-                element.extension = nft_info.result.extension
-                this.allAds.push(element)
-                if (this.table)
-                  this.table.renderRows();
-              })
+            this.lcdService.getQuery(element.nft.contract_addr, { "nft_info": { "token_id": element.nft.token_id } })
+              .subscribe(
+                (nft_info) => {
+                  console.log(this.allAds)
+                  element.extension = nft_info.result.extension
+                  this.allAds.push(element)
+
+                  if (this.table?.renderRows)
+                    this.table.renderRows()
+                })
             if (element.seller == this.walletAddress) {
               this.alreadyPostedAd = true
             }
@@ -311,6 +354,9 @@ export class AppComponent {
 
   getImage(nft: any) {
     if (nft.image.startsWith("ipfs")) {
+      if (nft.name.indexOf("HellCat") != -1){
+        return `https://cdn.luart.io/mainnet/terra1nssfuchvr6nn58a9gqqxz62d7rz42zes82rehs/random-images/${nft.id}.png`
+      }
       return "https://d75aawrtvbfp1.cloudfront.net/" + nft.image
     } else {
       return nft.image

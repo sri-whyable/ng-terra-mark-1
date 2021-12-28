@@ -20,4 +20,8 @@ export class LcdService {
     getQuery(contract: string, query: any) {
         return this.http.get<any>(this.lcdHost + "/wasm/contracts/" + contract + "/store?query_msg=" + JSON.stringify(query));
     }
+
+    getRecentTx(contract: string) {
+        return this.http.get<any>("https://fcd.terra.dev" + "/v1/txs?offset=0&limit=100&account=" + contract + "&chainId=columbus-5");
+    }
 }

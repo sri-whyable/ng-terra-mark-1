@@ -19,6 +19,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from "@angular/forms";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 
 @NgModule({
   declarations: [
@@ -38,6 +39,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     MatButtonModule,
     MatSnackBarModule,
     MatCardModule,
+    MatTabsModule,
     HttpClientModule,
     MatTableModule,
     MatProgressBarModule,
