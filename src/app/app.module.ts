@@ -3,7 +3,6 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { SellDialog } from './sell-dialog.component';
 import { WalletChooseDialog } from "./wallet-choose-dialog.component";
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatSelectModule } from '@angular/material/select';
@@ -20,12 +19,13 @@ import { FormsModule } from "@angular/forms";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
+import {LinkingPageComponent} from './linking-page.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    SellDialog,
     WalletChooseDialog,
+    LinkingPageComponent
   ],
   exports: [
   ],
